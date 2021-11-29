@@ -246,7 +246,9 @@ where
         let py = *unwind_safe_py;
         body(py)
     });
-
+    if let Err(ref x) = panic_result {
+        eprintln!(">>> PANIC: {:?}", x);
+    }
     panic_result_into_callback_output(pool.python(), panic_result)
 }
 
