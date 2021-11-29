@@ -10,8 +10,8 @@ use crate::{GILPool, IntoPyPointer};
 use crate::{IntoPy, PyObject, Python};
 use std::any::Any;
 use std::os::raw::c_int;
-use std::panic::{AssertUnwindSafe, UnwindSafe};
-use std::{isize, panic};
+use std::panic::UnwindSafe;
+use std::isize;
 
 /// A type which can be the return type of a python C-API callback
 pub trait PyCallbackOutput: Copy {
@@ -241,15 +241,8 @@ where
     R: PyCallbackOutput,
 {
     let pool = GILPool::new();
-    let unwind_safe_py = AssertUnwindSafe(pool.python());
-    let panic_result = panic::catch_unwind(move || -> PyResult<_> {
-        let py = *unwind_safe_py;
-        body(py)
-    });
-    if let Err(ref x) = panic_result {
-        eprintln!(">>> PANIC: {:?}", x);
-    }
-    panic_result_into_callback_output(pool.python(), panic_result)
+    let panic_result = body(pool.python());
+    panic_result_into_callback_output(pool.python(), Ok(panic_result))
 }
 
 fn panic_result_into_callback_output<R>(
